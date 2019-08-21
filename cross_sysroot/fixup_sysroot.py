@@ -12,8 +12,8 @@ def fix_symbolic_link(root, path, file_path):
         linkto = os.readlink(file_path)
         linkto_fullpath = os.path.join(path, linkto)
         if linkto.startswith("/"):
-            new_source = os.path.join(root, linkto[1:])
-            if os.path.isfile(new_source):
+            new_source = os.path.join(os.path.relpath(root, path), linkto[1:])
+            if os.path.isfile(os.path.join(path, new_source)):
                 logger.info("Fix link for %s (from %s)", new_source, file_path)
                 os.remove(file_path)
                 os.symlink(new_source, file_path)
@@ -37,7 +37,11 @@ def patch_pkg_config(root, path, file_path):
         while line:
             is_prefix = pkconfig_line_is_prefix.findall(line)
             if is_prefix:
-                line = "prefix=%s%s\n" % (root, is_prefix[0])
+                if is_prefix[0].startswith(root):
+                    logger.info("Pkg config file %s already patched", file_path)
+                    return
+                else:
+                    line = "prefix=%s%s\n" % (root, is_prefix[0])
 
             pkg_config_data += line
             line = f.readline()

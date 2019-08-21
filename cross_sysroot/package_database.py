@@ -48,7 +48,8 @@ def load_distribution_database(args):
     sqlite_database_filepath = args.build_root + "/%s-%s-%s-Packages.db" % \
             (args.distribution, args.distribution_version, args.architecture)
     if os.path.isfile(sqlite_database_filepath):
-        os.remove(sqlite_database_filepath)
+        sql_conn = sqlite3.connect(sqlite_database_filepath)
+        return sql_conn
     sql_conn = sqlite3.connect(sqlite_database_filepath)
     sql_cur = sql_conn.cursor()
     sql_cur.execute("CREATE TABLE Packages(ID integer primary key autoincrement, "
@@ -200,9 +201,12 @@ def resolve_dependencies(args, sql_conn):
 def download_package(args, local_packages_root, package):
     package_file = os.path.join(local_packages_root, package['name'] + '.deb')
     package_url = args.distribution_url + package['filename']
-    logger.info("Download package %s", package_file)
-    urlretrieve(package_url, package_file)
-    subprocess.call(["dpkg", "-x", package_file, args.build_root])
+    if os.path.isfile(package_file):
+        logger.info("Package %s already downloaded and installed", package_file)
+    else:
+        logger.info("Download package %s", package_file)
+        urlretrieve(package_url, package_file)
+        subprocess.call(["dpkg", "-x", package_file, args.build_root])
 
 
 def download_packages(args):
