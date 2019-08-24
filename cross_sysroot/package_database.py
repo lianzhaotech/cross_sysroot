@@ -203,6 +203,8 @@ def download_package(args, local_packages_root, package):
     package_url = args.distribution_url + package['filename']
     if os.path.isfile(package_file):
         logger.info("Package %s already downloaded and installed", package_file)
+        if args.force_update:
+            subprocess.call(["dpkg", "-x", package_file, args.build_root])
     else:
         logger.info("Download package %s", package_file)
         urlretrieve(package_url, package_file)
